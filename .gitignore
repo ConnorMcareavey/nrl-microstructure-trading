@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Data. Only data/trades.csv is committed. Everything else under data/
+# (the scraped nrl.com games, the processed files and the pre-match odds)
+# stays on this computer.
+data/*
+!data/trades.csv
