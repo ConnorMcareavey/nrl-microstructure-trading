@@ -38,6 +38,7 @@ COMPETITIONS = {
     "origin": 116,         # State of Origin (men's)
     "womens-origin": 156,  # State of Origin (women's)
     "world-cup": 131,      # Rugby League World Cup
+    "womens-world-cup": 157,  # Women's Rugby League World Cup
 }
 
 BASE = "https://www.nrl.com"
