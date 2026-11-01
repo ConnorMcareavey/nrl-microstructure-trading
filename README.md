@@ -1,6 +1,10 @@
 # Next-try pricing in the NRL
 
-This repository tests whether a major online bookmaker's live "next try" odds undervalued the team that had just scored. NRL games from 2013 to 2019 say they did. Applied to the odds actually taken, the scoring rates from those games predict a flat ROI of +9.7%, and a season of real trades returned +11.7%.
+This repository tests whether a major online bookmaker's live "next try" odds undervalued the team that had just scored.
+
+The strategy targets a market microstructure effect in the in-play next-try market. After each try, this bookmaker reopens its market about a minute before other bookmakers. In that window the price on the team that just scored is often long (for example 2.20 on a team priced at 1.90 to score the first try), and it converges back once the other bookmakers open their markets. The trades are placed in that window, before the rest of the market prices in.
+
+Three pieces of evidence follow. NRL games from 2013 to 2019 say the price for the team that had just scored was too long, and applied to the odds actually taken they predict a flat ROI of +9.7%. A season of real trades returned +11.7%. And archived in-play prices from the 2026 World Cup show the opening price shortening over the two minutes after the market reopens.
 
 **Summary**
 
@@ -11,6 +15,7 @@ This repository tests whether a major online bookmaker's live "next try" odds un
 | 2013-2019 lookup table probability | 52.2% |
 | Predicted ROI from the lookup table | +9.7% (95% CI +7.5% to +12.0%) |
 | Actual flat ROI | +11.7% (95% CI +3.7% to +19.8%) |
+| CLV of the opening odds after two minutes, every World Cup reopening | +4.0% (95% CI +1.1% to +6.6%) |
 
 **The market**
 
@@ -55,7 +60,28 @@ Trades in the same game aren't independent, so the bootstrap resamples whole gam
 
 ![Bootstrap distribution of flat ROI from 20,000 resamples of whole games, centred near +11.7%, with P(ROI ≤ 0) = 0.002.](figures/4-statistical-significance.png)
 
-**The theory that didn't hold up**
+**The mechanism, price drift after the market reopens**
+
+The trades target the moment the market reopens, so the opening price itself was tested. The MoviOdds historical odds API records the bookmaker's in-play prices with timestamps and suspension status, but its rugby league coverage starts on 13 October 2026, so this test uses the 2026 men's World Cup rather than the NRL. It covers every reopening of the next-try market in 15 games, 135 in all, traded or not. The measure is the margin-free probability of the team that had just scored, taken from both teams' prices at the same moment.
+
+| Window after reopening | Change in the scorer's probability | 95% CI | Reopenings |
+|---|---|---|---|
+| 0 to 30 s | +0.4 pts | -0.1 to +0.9 | 125 |
+| 0 to 60 s | +1.2 pts | +0.4 to +2.1 | 106 |
+| 0 to 120 s | +2.6 pts | +1.5 to +3.8 | 67 |
+| 180 to 240 s (control) | -0.2 pts | -3.2 to +1.9 | 24 |
+
+If the reopening price were already efficient, the scorer's probability would be as likely to drift down as up after the market reopened. Instead the opening price held for a median of 56 seconds before its first change, then shortened, and over the later control window there was no drift. A consistent upward drift right after reopening means the opening price was often too long to back. In odds terms, taking the opening price beat the bookmaker's own price 60 seconds later by +1.9% on average (95% CI +0.7% to +3.4%), and 120 seconds later by +4.0% (95% CI +1.1% to +6.6%). At two minutes the opening price was better in 70% of reopenings and worse in 13%. The women's World Cup, analysed separately, shows the same pattern.
+
+![The change in the scorer's probability after each of the 135 reopenings, with the mean rising to +2.6 points at 120 seconds.](figures/6-reopening-drift.png)
+
+The traded reopenings follow the same path. Of the 7 with a clean two-minute window after the trade, every one got a better price than the market two minutes later, with a median CLV of +15.2%. The recorded prices also match the trades, with 10 of the 11 recorded fills at exactly the odds taken.
+
+![The backed team's odds after each traded World Cup reopening, holding flat after the reopening and then shortening in most cases, with each trade marked.](figures/7-traded-reopenings.png)
+
+This part of the analysis has clear limits. The API only has this one bookmaker's prices, so it shows the opening price correcting but can't show the other bookmakers opening later. It covers 15 World Cup games, not the NRL, so it is evidence of the mechanism rather than a check of each NRL trade. It records price changes on its own schedule, so a gap can be missing data rather than an unchanged price. Windows cut short by a suspension or the next try are dropped, which is why the sample falls from 135 to 67 at two minutes. And the CLV is measured against the bookmaker's own later price, which includes its margin. With the margin removed, the opening odds are still about 2.6% below fair on average (95% CI -5.3% to -0.2%), so the correction on its own is about the size of the margin. The profit in the trades also depends on the price being long relative to the historical probabilities above.
+
+**Testing the six-again hypothesis**
 
 The original theory was that the 2020 "six again" rules were the reason, because a faster game should mean more runs of tries. It has been evident the NRL's interim CEO, Peter V'landys, is inclined to introduce a new 'kickoff' rule (letting the opposing team choose whether to receive or kickoff after a try is scored), [in an attempt to slow down 'momentum'](https://www.zerotackle.com/nrl-2026-rule-change-trial-what-is-it-when-is-it-being-used-why-is-it-happening-237429/). This rule was tested in a 'dead rubber' game towards the end of the 2026 NRL season. These actions only reinforce the curiosity that consecutive runs of momentum were happening more often, hence statistical tests were conducted. The test compares the real order of tries in each game with the same tries in a random order. Teams do score back-to-back more often than chance, but no more since the rule change than before.
 
@@ -75,7 +101,7 @@ The odds are only known for trades that were actually placed, because there's no
 
 **Data**
 
-Match data comes from nrl.com's match centre and pre-match odds from [AusSportsBetting](https://www.aussportsbetting.com/data/). Neither is included here. The odds file is free for personal use, and the match data is rebuilt by the scraper. data/trades.csv has every trade, with its time, competition, team, try number, odds, stake and result. Its match IDs number the games in the order they were traded.
+Match data comes from nrl.com's match centre, pre-match odds from [AusSportsBetting](https://www.aussportsbetting.com/data/), and World Cup in-play prices from the [MoviOdds historical odds API](https://moviodds.com/doc). None of these are included here. The odds file is free for personal use, and the match data is rebuilt by the scraper. data/trades.csv has every trade, with its time, competition, team, try number, odds, stake and result. Its match IDs number the games in the order they were traded.
 
 **Repository layout**
 
@@ -89,6 +115,7 @@ Match data comes from nrl.com's match centre and pre-match odds from [AusSportsB
 | src/nrl_microstructure/evaluate.py | Flat and stake-weighted ROI and the bootstrap |
 | src/nrl_microstructure/history.py | The 2013-2019 lookup table, the predicted ROI and the rule-change test |
 | src/nrl_microstructure/clustering.py | The shuffle test for back-to-back tries |
+| src/nrl_microstructure/reopening.py | In-play price dynamics after each reopening, and CLV |
 | src/nrl_microstructure/figures.py | Draws the figures |
 | tests/ | Tests for each step |
 
@@ -106,8 +133,11 @@ Rebuilding the historical data takes two to three hours, mostly to collect every
 
 ```
 python src/scrape.py --seasons 2013-2026
+python src/scrape.py --competition world-cup --seasons 2026
+python src/scrape.py --competition womens-world-cup --seasons 2026
 python -m nrl_microstructure.parse
 python -m nrl_microstructure.odds path/to/nrl.xlsx
 python -m nrl_microstructure.history
+python -m nrl_microstructure.reopening
 python -m nrl_microstructure.figures
 ```
