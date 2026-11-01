@@ -45,7 +45,7 @@ BASE = "https://www.nrl.com"
 # The scraper identifies itself and links to this repository. Requests are
 # made one at a time, with a pause after each (see --delay).
 HEADERS = {
-    "User-Agent": "nrl-try-momentum/0.1 (research scraper; https://github.com/ConnorMcareavey/nrl-try-momentum)"
+    "User-Agent": "nrl-microstructure-trading/0.1 (research scraper; https://github.com/ConnorMcareavey/nrl-microstructure-trading)"
 }
 
 # Each match centre page stores its match record as HTML-escaped JSON in the

@@ -1,7 +1,8 @@
 requests>=2.31
 pandas>=2.0
 numpy>=1.26
-openpyxl>=3.1   # reads the pre-match odds spreadsheet
+openpyxl>=3.1     # reads the pre-match odds spreadsheet
+matplotlib>=3.8   # draws the figures
 
 # Tests
 pytest>=8.0
