@@ -8,7 +8,7 @@ rate against the implied probability by odds band.
 
 Run from the repository root with
 
-    python -m nrl_momentum.evaluate
+    python -m nrl_microstructure.evaluate
 
 All random draws use a fixed seed, so the output is the same on every run.
 """

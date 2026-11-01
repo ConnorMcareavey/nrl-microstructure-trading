@@ -1,4 +1,4 @@
-"""Tests for nrl_momentum.evaluate.
+"""Tests for nrl_microstructure.evaluate.
 
 The ROI and whole-day tests use small examples worked out by hand. The final
 test checks the bootstrap itself. On synthetic trades with no edge, its 95%
@@ -8,7 +8,7 @@ interval should contain zero in about 95% of datasets.
 import numpy as np
 import pandas as pd
 
-from nrl_momentum.evaluate import (
+from nrl_microstructure.evaluate import (
     add_derived_columns,
     cluster_bootstrap,
     cluster_by_day,

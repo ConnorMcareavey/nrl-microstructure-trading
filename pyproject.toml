@@ -20,11 +20,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
-# The importable code lives in src/nrl_momentum/.
+# The importable code lives in src/nrl_microstructure/.
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# Lets the tests import nrl_momentum without installing the package first.
+# Lets the tests import nrl_microstructure without installing the package first.
 pythonpath = ["src"]
