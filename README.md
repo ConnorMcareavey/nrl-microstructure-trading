@@ -19,7 +19,7 @@ Three pieces of evidence follow. NRL games from 2013 to 2019 say the price for t
 
 **The market**
 
-After each try the bookmaker offers odds on which team will score the next one. If no further try is scored, the bet is void. Every trade here was placed after at least one try had been scored.
+After each try the bookmaker offers odds on which team will score the next one. If no further try is scored, the bet is void. Every trade in the analysis was placed after at least one try had been scored.
 
 **The edge in the historical data**
 
@@ -48,7 +48,9 @@ The trades were placed through the 2026 season, starting with small stakes that 
 | Flat ROI | +11.7% |
 | Stake-weighted ROI | +11.3% |
 
-Across every trade in the file (783 in total, including NRLW, the World Cup and State of Origin), the total staked was $420,175 for a profit of $47,902, a flat ROI of 11.6%.
+The figures above use the 703 core trades, the ones the 2013-2019 lookup table can be applied to. The historical data covers only the NRL Premiership, so the core trades exclude NRLW, State of Origin and World Cup games. Each was placed after at least one try had been scored, because the table is built around the team that had just scored, and void bets are left out because they have no result.
+
+Across every trade in the file (783 in total, including NRLW, the World Cup, State of Origin and voids), the total staked was $420,175 for a profit of $47,902, a flat ROI of 11.6%. The core trades account for $41,665 of that profit, which is the figure in the cumulative profit chart below. The other $6,237 comes from the trades outside the core sample.
 
 ![Predicted ROI of +9.7% (95% CI +7.5% to +12.0%) beside the actual ROI of +11.7% (95% CI +3.7% to +19.8%).](figures/2-predicted-vs-actual.png)
 
