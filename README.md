@@ -37,6 +37,12 @@ Each trade is assigned the probability p from its cell, or 1 - p if it backed th
 
 <img src="figures/1-price-vs-history.png" width="620" alt="Lookup table probability against implied probability for the 703 trades in seven groups. Every group sits above the fair-odds line.">
 
+**Why the team that just scored**
+
+After a try the conceding team kicks off, so the team that just scored gets the ball straight back. Splitting every pair of consecutive tries from 2013 to 2025 into ten equal-sized groups by the game time between them, the same team scored the next try 73% of the time in the quickest group (under about 3 minutes), against 54% if each game's tries came in a random order (a difference of +19.1 points, 95% CI +16.8 to +21.2). The quickest group was above random order in all 13 seasons, and in the other nine groups the difference is under 3 points. Of the 703 trades, 92% backed the team that had just scored, placed as the market reopened, just before that team received the kick-off. This explains why that team is more likely to score next, though not why the price was long, which the reopening section below covers. The grouping was chosen after looking at the data, so this result is exploratory.
+
+![Same-team share minus random order by time since the previous try. The quickest group is about 19 points above random order and the other nine are close to zero.](figures/8-same-team-by-gap.png)
+
 **The live test**
 
 The trades were placed through the 2026 season, starting with small stakes that grew as the results held up. Their results were never used in the prediction above, so they are an independent test of it.
@@ -77,9 +83,9 @@ If the reopening price were already efficient, the scorer's probability would be
 
 ![The change in the scorer's probability after each of the 135 reopenings, with the mean rising to +2.6 points at 120 seconds.](figures/6-reopening-drift.png)
 
-The traded reopenings follow the same path. Of the 7 with a clean two-minute window after the trade, every one got a better price than the market two minutes later, with a median CLV of +15.2%. The recorded prices also match the trades, with 10 of the 11 recorded fills at exactly the odds taken.
+The traded reopenings follow the same path. Of the 7 with a clean two-minute window after the trade, shown below, every one got a better price than the market two minutes later, with a median CLV of +15.2%. The recorded prices also match the trades, with 10 of the 11 recorded fills at exactly the odds taken.
 
-![The backed team's odds after each traded World Cup reopening, holding flat after the reopening and then shortening in most cases, with each trade marked.](figures/7-traded-reopenings.png)
+![The backed team's odds after the 7 traded World Cup reopenings with a clean two-minute window, holding flat after the reopening and then shortening in most cases, with each trade marked.](figures/7-traded-reopenings.png)
 
 This part of the analysis has clear limits. The API only has this one bookmaker's prices, so it shows the opening price correcting but can't show the other bookmakers opening later. It covers 15 World Cup games, not the NRL, so it is evidence of the mechanism rather than a check of each NRL trade. It records price changes on its own schedule, so a gap can be missing data rather than an unchanged price. Windows cut short by a suspension or the next try are dropped, which is why the sample falls from 135 to 67 at two minutes. And the CLV is measured against the bookmaker's own later price, which includes its margin. With the margin removed, the opening odds are still about 2.6% below fair on average (95% CI -5.3% to -0.2%), so the correction on its own is about the size of the margin. The profit in the trades also depends on the price being long relative to the historical probabilities above.
 
@@ -115,8 +121,8 @@ Match data comes from nrl.com's match centre, pre-match odds from [AusSportsBett
 | src/nrl_microstructure/odds.py | Pre-match win probabilities from historical odds |
 | src/nrl_microstructure/join.py | Links each trade to its match and the tries either side of it |
 | src/nrl_microstructure/evaluate.py | Flat and stake-weighted ROI and the bootstrap |
-| src/nrl_microstructure/history.py | The 2013-2019 lookup table, the predicted ROI and the rule-change test |
-| src/nrl_microstructure/clustering.py | The shuffle test for back-to-back tries |
+| src/nrl_microstructure/history.py | The 2013-2019 lookup table, the predicted ROI, same team next by time since the previous try, and the rule-change test |
+| src/nrl_microstructure/clustering.py | The shuffle test for back-to-back tries, and the breakdown by time between tries |
 | src/nrl_microstructure/reopening.py | In-play price dynamics after each reopening, and CLV |
 | src/nrl_microstructure/figures.py | Draws the figures |
 | tests/ | Tests for each step |

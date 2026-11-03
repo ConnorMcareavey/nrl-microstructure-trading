@@ -1,4 +1,4 @@
-"""Two checks against NRL try data from 2013-2025. No fitted model.
+"""Three checks against NRL try data from 2013-2025. No fitted model.
 
 1. Lookup table. Take every try in 2013-2019 that was followed by another
    try, and count how often the team that scored also scored the next one.
@@ -8,7 +8,12 @@
    bet. It uses the odds but not whether the bet won, so the bets' actual
    return is an independent check of it.
 
-2. Rule-change test (the shuffle test). In each match, compare how often the
+2. Same team next by time since the previous try. Every pair of consecutive
+   tries in 2013-2025, in ten equal-sized groups by the game time between
+   them, comparing how often the same team scored both with what a random
+   order of each match's tries would give.
+
+3. Rule-change test (the shuffle test). In each match, compare how often the
    same team scored back-to-back with what would be expected if that match's
    tries came in a random order. Its try counts stay the same, so a strong
    team scoring lots of tries isn't mistaken for momentum. Do this for
@@ -163,6 +168,25 @@ def print_rule_change_test(result, per_match):
           f" ({clustering.N_PERMUTATIONS:,} shuffles)")
 
 
+def print_same_team_by_gap(table, pairs, bets):
+    first = pairs["minutes"] <= table["to_minutes"].iloc[0]
+    print(f"SAME TEAM NEXT BY TIME SINCE THE PREVIOUS TRY: {len(pairs):,} pairs of consecutive tries, 2013-2025")
+    print(f"Ten equal-sized groups by game time between the tries, 95% CI from "
+          f"{clustering.N_GAP_RESAMPLES:,} resamples of matches")
+    print(f"  {'minutes':<14}{'pairs':>7}{'same team':>11}{'random order':>14}{'difference':>12}   95% CI")
+    for _, row in table.iterrows():
+        print(f"  {row['from_minutes']:>5.1f} to {row['to_minutes']:<5.1f}{int(row['pairs']):>7,}{row['same']:>11.1%}"
+              f"{row['random_same']:>14.1%}{row['difference'] * 100:>+11.1f}pt   "
+              f"{row['ci_low'] * 100:+.1f} to {row['ci_high'] * 100:+.1f}")
+    by_season = pairs[first].groupby("season")[["same", "random_same"]].mean()
+    above = (by_season["same"] > by_season["random_same"]).sum()
+    print(f"Quickest group by season: same team {by_season['same'].min():.0%} to {by_season['same'].max():.0%}, "
+          f"random order {by_season['random_same'].min():.0%} to {by_season['random_same'].max():.0%}, "
+          f"above random order in {above} of {len(by_season)} seasons")
+    backed = bets["backed_just_scored"].astype(bool)
+    print(f"Trades that backed the team that had just scored: {backed.sum()} of {len(bets)} ({backed.mean():.0%})\n")
+
+
 def main():
     matches = pd.read_csv(PROCESSED_DIR / "matches.csv")
     tries = pd.read_csv(PROCESSED_DIR / "tries.csv")
@@ -179,6 +203,9 @@ def main():
     bet_moments = moment_before_each_bet(bets, tries, home_win_prob)
     chance = chance_for_each_bet(table, bets, bet_moments)
     print_bets(bets, chance, predicted_return_resamples(moments, bets, bet_moments))
+
+    pairs = clustering.consecutive_pairs(tries, matches)
+    print_same_team_by_gap(clustering.same_team_by_gap(pairs), pairs, bets)
 
     per_match = clustering.per_match_table(tries, matches)
     print_rule_change_test(clustering.compare_before_and_after(per_match), per_match)

@@ -5,6 +5,9 @@ tries in a row, and compares that with what would be expected if the match's
 tries had come in a random order. Each team's try count stays the same, so a strong
 team scoring lots of tries isn't mistaken for momentum.
 
+The same comparison is also broken down by the game time between consecutive
+tries, which shows where the back-to-back tries come from.
+
 Only matches that pass parse.py's try-count check (tries_ok) are used. 2020
 is left out: six-again arrived partway through it.
 """
@@ -158,6 +161,71 @@ def compare_before_and_after(per_match, n_bootstrap=N_BOOTSTRAP, n_permutations=
         "change": excess_clustering(after) - excess_clustering(before),
         "change_ci": interval(after_resamples - before_resamples),
     }
+
+
+# ---------------------------------------------------------------------------
+# Same team next, by time since the previous try
+# ---------------------------------------------------------------------------
+
+GAP_SEASONS = list(range(2013, 2026))   # 2013-2025, so the 2026 trading season isn't used
+N_GAP_GROUPS = 10
+N_GAP_RESAMPLES = 5_000
+
+
+def consecutive_pairs(tries, matches, seasons=GAP_SEASONS):
+    """One row per pair of consecutive tries in a usable match.
+
+    minutes is the game time between the two tries. random_same is the chance
+    the pair is by the same team if the match's tries came in a random order,
+    which is the expected same-team transitions spread evenly over the N - 1
+    pairs. Example: 5 tries to 3 gives 3.25 / 7 = 46.4%.
+    """
+    usable = matches[(matches["competition"] == "nrl") & matches["tries_ok"] & matches["season"].isin(seasons)]
+    usable_tries = tries[tries["match_key"].isin(usable["match_key"])]
+    season_of = usable.set_index("match_key")["season"]
+
+    rows = []
+    for match_key, group in usable_tries.sort_values(["match_key", "try_number"]).groupby("match_key"):
+        home = group["is_home"].to_numpy()
+        seconds = group["game_seconds"].to_numpy()
+        n_home = int(home.sum())
+        random_same = expected_same_team_transitions(n_home, len(home) - n_home) / max(len(home) - 1, 1)
+        for k in range(len(home) - 1):
+            rows.append({"match_key": match_key, "season": season_of[match_key],
+                         "minutes": (seconds[k + 1] - seconds[k]) / 60,
+                         "same": bool(home[k + 1] == home[k]), "random_same": random_same})
+    return pd.DataFrame(rows)
+
+
+def same_team_by_gap(pairs, n_groups=N_GAP_GROUPS, n_resamples=N_GAP_RESAMPLES, seed=RANDOM_SEED):
+    """Same-team share against random order, in equal-sized groups by time since the previous try.
+
+    One row per group: its minute range, the number of pairs, the share by the
+    same team, the share under random order, the difference, and a 95% CI for
+    the difference from resampling whole matches.
+    """
+    pairs = pairs.assign(group=pd.qcut(pairs["minutes"], n_groups, labels=False),
+                         difference=pairs["same"] - pairs["random_same"])
+
+    # Sum each match's pairs within each group, so whole matches can be resampled.
+    match_index = pairs["match_key"].astype("category").cat.codes.to_numpy()
+    n_matches = match_index.max() + 1
+    difference = np.zeros((n_matches, n_groups))
+    count = np.zeros((n_matches, n_groups))
+    np.add.at(difference, (match_index, pairs["group"]), pairs["difference"])
+    np.add.at(count, (match_index, pairs["group"]), 1)
+
+    # Each row of weights says how many times each match is drawn in one resample.
+    rng = np.random.default_rng(seed)
+    weights = rng.multinomial(n_matches, np.full(n_matches, 1 / n_matches), size=n_resamples)
+    resampled = (weights @ difference) / (weights @ count)
+
+    table = pairs.groupby("group").agg(from_minutes=("minutes", "min"), to_minutes=("minutes", "max"),
+                                       pairs=("same", "size"), same=("same", "mean"),
+                                       random_same=("random_same", "mean"))
+    table["difference"] = table["same"] - table["random_same"]
+    table["ci_low"], table["ci_high"] = np.percentile(resampled, [2.5, 97.5], axis=0)
+    return table
 
 
 # ---------------------------------------------------------------------------

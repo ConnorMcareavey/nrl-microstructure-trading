@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from nrl_microstructure.clustering import (
+    consecutive_pairs,
     excess_clustering,
     expected_same_team_transitions,
     permutation_test,
@@ -26,6 +27,22 @@ def test_expected_formula_matches_brute_force():
         orderings = set(itertools.permutations("A" * n_a + "B" * n_b))
         brute_force = np.mean([same_team_transitions(o) for o in orderings])
         assert np.isclose(brute_force, expected_same_team_transitions(n_a, n_b))
+
+
+def test_consecutive_pairs_worked_example():
+    # A made-up Storm (home) v Eels game, 5 tries to 3 in the order SSEESSSE.
+    # Random order gives 3.25 same-team pairs out of 7, so 46.4% for each pair.
+    matches = pd.DataFrame({"match_key": ["storm-v-eels"], "competition": ["nrl"], "season": [2024],
+                            "tries_ok": [True]})
+    order = "SSEESSSE"
+    tries = pd.DataFrame({"match_key": "storm-v-eels", "try_number": range(1, 9),
+                          "is_home": [c == "S" for c in order],
+                          "game_seconds": [300, 480, 1500, 1620, 2400, 2580, 3300, 4500]})
+    pairs = consecutive_pairs(tries, matches)
+    assert len(pairs) == 7
+    assert pairs["same"].tolist() == [True, False, True, False, True, True, False]
+    assert pairs["minutes"].iloc[0] == 3
+    assert np.isclose(pairs["random_same"].iloc[0], 3.25 / 7)
 
 
 def make_per_match(sequences):

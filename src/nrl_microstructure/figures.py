@@ -63,7 +63,10 @@ def load_data():
                                               transitions=("transitions", "sum"))
     seasons["same_team_next"] = seasons["observed"] / seasons["transitions"]
 
+    pairs = clustering.consecutive_pairs(tries, matches)
+
     data = {
+        "same_team_by_gap": clustering.same_team_by_gap(pairs),
         "bets": bets,
         "chance": chance,
         "predicted_resamples": history.predicted_return_resamples(moments, bets, bet_moments),
@@ -80,7 +83,11 @@ def load_data():
         data["inplay_curves"] = men
         data["inplay_rows"] = rows[rows["league"] == "World Cup"]
         data["inplay_drift"] = reopening.drift_curve(men)
-        data["traded_reopenings"] = reopening.traded_reopenings(games, matches, tries, horizon=500)
+        # Only the traded reopenings with a clean two-minute window after the
+        # trade, the same ones behind the CLV figures in reopening.py.
+        traded = reopening.traded_reopenings(games, matches, tries)
+        clean = reopening.traded_clv(traded)["clv_120s"].notna()
+        data["traded_reopenings"] = [t for t, is_clean in zip(traded, clean) if is_clean]
     return data
 
 
@@ -255,6 +262,35 @@ def rule_change(data, theme):
     return fig
 
 
+def same_team_by_gap(data, theme):
+    """Figure 8. Same team scored next against random order, by time since the previous try."""
+    table = data["same_team_by_gap"]
+    fig, (ax,) = new_figure(theme)
+    ax.axhline(0, color=theme["axis"], linewidth=1)
+    ax.vlines(table.index, table["ci_low"] * 100, table["ci_high"] * 100, color=theme["history"],
+              linewidth=LINE_WIDTH, alpha=0.8)
+    ax.plot(table.index, table["difference"] * 100, "o", color=theme["history"], markersize=MARKER_SIZE,
+            markeredgecolor=theme["surface"], markeredgewidth=1.2, zorder=3)
+    quickest = table.iloc[0]
+    ax.text(0.3, quickest["difference"] * 100, f"same team {quickest['same']:.0%}\nrandom order "
+            f"{quickest['random_same']:.0%}", color=theme["text"], fontsize=9, va="center")
+
+    labels = [f"{row.from_minutes:.0f}-{row.to_minutes:.0f}" for row in table.itertuples()]
+    labels[0] = f"under {table['to_minutes'].iloc[0]:.1f}"
+    labels[-1] = f"{table['from_minutes'].iloc[-1]:.0f}+"
+    ax.set_xticks(table.index)
+    ax.set_xticklabels(labels, fontsize=8.5)
+    ax.set_xlabel("Game minutes since the previous try, ten equal-sized groups", color=theme["secondary"])
+    ax.set_ylim(-5, 25)
+    ax.set_yticks([-5, 0, 5, 10, 15, 20, 25])
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{v:+.0f} pts" if v else "0"))
+    add_titles(fig, theme, "Same team scored next, by time since the previous try",
+               f"NRL Premiership 2013-2025, {int(table['pairs'].sum()):,} pairs of consecutive tries. Same-team share minus "
+               "the share if each game's tries came\nin a random order, with 95% CIs (games resampled).")
+    fig.subplots_adjust(left=0.10, right=0.97, top=0.78, bottom=0.14)
+    return fig
+
+
 SHORT_NAMES = {"Australia": "AUS", "New Zealand": "NZ", "Papua New Guinea": "PNG", "Lebanon": "LEB",
                "England": "ENG", "Tonga": "TGA", "Samoa": "SAM", "France": "FRA", "Fiji": "FIJ", "Cook Islands": "COK"}
 
@@ -298,7 +334,7 @@ def reopening_drift(data, theme):
 
 
 def traded_reopenings(data, theme):
-    """Figure 7. The backed team's odds after reopening, for each traded World Cup reopening."""
+    """Figure 7. The backed team's odds after reopening, for each clean traded World Cup reopening."""
     traded = data["traded_reopenings"]
     ncols = 4
     nrows = -(-len(traded) // ncols)
@@ -330,9 +366,9 @@ def traded_reopenings(data, theme):
     for ax in axes[len(traded):]:
         ax.set_visible(False)
     add_titles(fig, theme, "The traded reopenings",
-               "Men's World Cup 2026. The backed team's odds from the moment the next-try market reopened, for at least "
-               "four minutes and past the trade.\nThe orange dot is the trade, grey shading marks suspensions, and the "
-               "x-axis is seconds after reopening.")
+               f"Men's World Cup 2026. The {len(traded)} traded reopenings with a clean two-minute window after the trade, "
+               "as in the CLV figures.\nThe backed team's odds by seconds after the market reopened. The orange dot is "
+               "the trade and grey shading marks suspensions.")
     height = fig.get_figheight()
     fig.subplots_adjust(left=0.06, right=0.98, top=1 - 1.45 / height, bottom=0.05, hspace=0.55, wspace=0.28)
     return fig
@@ -346,6 +382,7 @@ FIGURES = {
     "5-rule-change": rule_change,
     "6-reopening-drift": reopening_drift,
     "7-traded-reopenings": traded_reopenings,
+    "8-same-team-by-gap": same_team_by_gap,
 }
 
 
