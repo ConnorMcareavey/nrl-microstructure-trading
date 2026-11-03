@@ -105,7 +105,7 @@ The excess is the share of consecutive tries scored by the same team beyond what
 
 **Caveats**
 
-The odds are only known for trades that were actually placed, because there's no public record of live next-try odds. So this shows the odds were too long on these trades, not on every moment after a try. The lookup table only knows each team's pre-match strength and the score. It can't see what happens during a game, such as injuries, sin bins or which side is on top. The table's groups were set once, at round numbers, and not adjusted afterwards. It's one season of trades, and the implied probability includes the bookmaker's margin, so the bookmaker's own estimate was lower still.
+The odds are only known for trades that were actually placed, because there's no public record of live next-try odds. So this shows the odds were too long on these trades, not on every moment after a try. The lookup table only knows each team's pre-match strength and the score. It can't see what happens during a game, such as injuries, sin bins or which side is on top. The table's groups were set once, at round numbers, and not adjusted afterwards. It's one season of trades, and the implied probability includes the bookmaker's margin, so the bookmaker's own estimate was lower still. The strategy ended in late 2026 when the bookmaker restricted me from placing live in-play calls (in Australia, in-play bets have to be placed by phone), which caps its capacity.
 
 **Data**
 
